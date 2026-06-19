@@ -1,0 +1,156 @@
+<script setup lang="ts">
+import type { FormSubmitEvent, FormError } from '@nuxt/ui'
+
+definePageMeta({ layout: false })
+
+const { fetch: refreshSession } = useUserSession()
+const toast = useToast()
+const router = useRouter()
+
+const state = reactive({
+  username: '',
+  password: '',
+})
+
+const loading = ref(false)
+const showPassword = ref(false)
+
+function validate(state: { username: string; password: string }): FormError[] {
+  const errors: FormError[] = []
+  if (!state.username) errors.push({ name: 'username', message: 'Email or username is required' })
+  if (!state.password) errors.push({ name: 'password', message: 'Password is required' })
+  return errors
+}
+
+async function onSubmit(_event: FormSubmitEvent<typeof state>) {
+  loading.value = true
+  try {
+    await $fetch('/api/auth/login', {
+      method: 'POST',
+      body: { username: state.username, password: state.password },
+    })
+    await refreshSession()
+    toast.add({ title: 'Welcome back!', color: 'success', icon: 'i-lucide-check' })
+    await router.push('/')
+  } catch (error: any) {
+    toast.add({
+      title: 'Login failed',
+      description: error?.data?.statusMessage || 'Invalid username or password.',
+      color: 'error',
+      icon: 'i-lucide-circle-alert',
+    })
+  } finally {
+    loading.value = false
+  }
+}
+</script>
+
+<template>
+  <div class="min-h-screen grid lg:grid-cols-2">
+    <!-- Brand / hero panel -->
+    <div class="relative hidden lg:flex flex-col justify-between overflow-hidden bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 p-12 text-white">
+      <div class="absolute -top-24 -right-24 size-96 rounded-full bg-white/10 blur-3xl" />
+      <div class="absolute -bottom-32 -left-16 size-96 rounded-full bg-white/10 blur-3xl" />
+
+      <div class="relative flex items-center gap-3">
+        <div class="flex size-11 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
+          <UIcon name="i-lucide-stethoscope" class="size-6" />
+        </div>
+        <span class="text-xl font-semibold tracking-tight">MedSaaS</span>
+      </div>
+
+      <div class="relative space-y-6">
+        <h1 class="text-4xl font-bold leading-tight">
+          Care, coordinated.
+        </h1>
+        <p class="max-w-md text-lg text-white/80">
+          The modern platform for managing clinics, patients, and teams — secure,
+          fast, and built for healthcare.
+        </p>
+        <ul class="space-y-3 text-white/90">
+          <li class="flex items-center gap-3">
+            <UIcon name="i-lucide-shield-check" class="size-5" />
+            <span>HIPAA-grade encryption at rest</span>
+          </li>
+          <li class="flex items-center gap-3">
+            <UIcon name="i-lucide-building-2" class="size-5" />
+            <span>Multi-clinic ready</span>
+          </li>
+          <li class="flex items-center gap-3">
+            <UIcon name="i-lucide-zap" class="size-5" />
+            <span>Lightning-fast workflows</span>
+          </li>
+        </ul>
+      </div>
+
+      <p class="relative text-sm text-white/60">
+        &copy; {{ new Date().getFullYear() }} MedSaaS. All rights reserved.
+      </p>
+    </div>
+
+    <!-- Form panel -->
+    <div class="flex items-center justify-center p-6 sm:p-12 bg-default">
+      <div class="w-full max-w-sm space-y-8">
+        <div class="space-y-2">
+          <div class="flex lg:hidden items-center gap-2 mb-6">
+            <div class="flex size-9 items-center justify-center rounded-xl bg-primary text-inverted">
+              <UIcon name="i-lucide-stethoscope" class="size-5" />
+            </div>
+            <span class="text-lg font-semibold">MedSaaS</span>
+          </div>
+          <h2 class="text-2xl font-bold text-highlighted">Sign in to your account</h2>
+          <p class="text-muted">Enter your credentials to continue.</p>
+        </div>
+
+        <UForm :state="state" :validate="validate" class="space-y-5" @submit="onSubmit">
+          <UFormField label="Email or username" name="username">
+            <UInput
+              v-model="state.username"
+              placeholder="jane@clinic.com or jane.doe"
+              icon="i-lucide-at-sign"
+              size="lg"
+              autocomplete="username"
+              class="w-full"
+            />
+          </UFormField>
+
+          <UFormField label="Password" name="password">
+            <UInput
+              v-model="state.password"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="••••••••"
+              icon="i-lucide-lock"
+              size="lg"
+              autocomplete="current-password"
+              class="w-full"
+            >
+              <template #trailing>
+                <UButton
+                  color="neutral"
+                  variant="link"
+                  size="sm"
+                  :icon="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                  :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                  @click="showPassword = !showPassword"
+                />
+              </template>
+            </UInput>
+          </UFormField>
+
+          <UButton
+            type="submit"
+            block
+            size="lg"
+            :loading="loading"
+            label="Sign in"
+            icon="i-lucide-log-in"
+          />
+        </UForm>
+
+        <p class="text-center text-sm text-muted">
+          Trouble signing in? Contact your administrator.
+        </p>
+      </div>
+    </div>
+  </div>
+</template>
