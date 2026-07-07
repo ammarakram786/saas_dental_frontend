@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import { mockAuditEvents } from '~/utils/mock'
-
 definePageMeta({ layout: 'platform' })
 useHead({ title: 'Security Audit · MedSaaS' })
 
 const { hasModule } = usePlatformUser()
 const allowed = computed(() => hasModule('security_audit'))
-
-const { data: events, pending } = useMockQuery(() => [...mockAuditEvents], { delay: 850 })
+const store = usePlatformAuditStore()
 
 const filter = ref('all')
 const filterItems = [
@@ -18,10 +15,17 @@ const filterItems = [
   { label: 'Security', value: 'security' },
 ]
 
-const filtered = computed(() => {
-  const list = events.value ?? []
-  if (filter.value === 'all') return list
-  return list.filter((e) => e.category === filter.value)
+async function loadEvents() {
+  await store.fetch({
+    ordering: '-created_at',
+    ...(filter.value !== 'all' ? { category: filter.value } : {}),
+  })
+}
+
+await loadEvents()
+
+watch(filter, () => {
+  loadEvents()
 })
 </script>
 
@@ -39,8 +43,11 @@ const filtered = computed(() => {
       </div>
 
       <UCard>
-        <AuditTimeline :events="filtered" :loading="pending" />
-        <p v-if="!pending && !filtered.length" class="py-8 text-center text-sm text-muted">
+        <AuditTimeline
+          :events="store.items.map((event) => ({ ...event, timestamp: event.created_at }))"
+          :loading="store.pending"
+        />
+        <p v-if="!store.pending && !store.items.length" class="py-8 text-center text-sm text-muted">
           No events in this category.
         </p>
       </UCard>

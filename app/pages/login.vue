@@ -3,16 +3,19 @@ import type { FormSubmitEvent, FormError } from '@nuxt/ui'
 
 definePageMeta({ layout: false })
 
-const { fetch: refreshSession } = useUserSession()
+const auth = useAuthStore()
 const toast = useToast()
 const router = useRouter()
 
 const state = reactive({
   username: '',
   password: '',
+  email: '',
 })
 
 const loading = ref(false)
+const passkeyLoading = ref(false)
+const magicLinkLoading = ref(false)
 const showPassword = ref(false)
 
 function validate(state: { username: string; password: string }): FormError[] {
@@ -25,11 +28,7 @@ function validate(state: { username: string; password: string }): FormError[] {
 async function onSubmit(_event: FormSubmitEvent<typeof state>) {
   loading.value = true
   try {
-    await $fetch('/api/auth/login', {
-      method: 'POST',
-      body: { username: state.username, password: state.password },
-    })
-    await refreshSession()
+    await auth.login(state.username, state.password)
     toast.add({ title: 'Welcome back!', color: 'success', icon: 'i-lucide-check' })
     await router.push('/')
   } catch (error: any) {
@@ -41,6 +40,62 @@ async function onSubmit(_event: FormSubmitEvent<typeof state>) {
     })
   } finally {
     loading.value = false
+  }
+}
+
+async function signInWithPasskey() {
+  passkeyLoading.value = true
+  try {
+    const options: any = await auth.beginPasskey(state.username)
+    const credential = await navigator.credentials.get({
+      publicKey: {
+        challenge: Uint8Array.from(atob(options.challenge.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)),
+        allowCredentials: (options.allowCredentials ?? []).map((item: any) => ({
+          ...item,
+          id: Uint8Array.from(atob(String(item.id).replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)),
+        })),
+      },
+    })
+
+    const publicKeyCredential = credential as PublicKeyCredential
+    await auth.finishPasskey(state.username, {
+      id: publicKeyCredential.id,
+      type: publicKeyCredential.type,
+      rawId: publicKeyCredential.id,
+    })
+    toast.add({ title: 'Signed in with passkey', color: 'success', icon: 'i-lucide-fingerprint' })
+    await router.push('/')
+  } catch (error: any) {
+    toast.add({
+      title: 'Passkey sign-in failed',
+      description: error?.data?.statusMessage || error?.message || 'Unable to complete passkey sign-in.',
+      color: 'error',
+      icon: 'i-lucide-circle-alert',
+    })
+  } finally {
+    passkeyLoading.value = false
+  }
+}
+
+async function sendMagicLink() {
+  magicLinkLoading.value = true
+  try {
+    const result: any = await auth.requestMagicLink(state.email)
+    toast.add({
+      title: 'Magic link prepared',
+      description: result?.token ? `Temporary token: ${result.token}` : 'Check your inbox.',
+      color: 'primary',
+      icon: 'i-lucide-mail',
+    })
+  } catch (error: any) {
+    toast.add({
+      title: 'Magic link failed',
+      description: error?.data?.statusMessage || 'Unable to prepare magic link.',
+      color: 'error',
+      icon: 'i-lucide-circle-alert',
+    })
+  } finally {
+    magicLinkLoading.value = false
   }
 }
 </script>
@@ -145,7 +200,42 @@ async function onSubmit(_event: FormSubmitEvent<typeof state>) {
             label="Sign in"
             icon="i-lucide-log-in"
           />
+
+          <UButton
+            block
+            size="lg"
+            color="neutral"
+            variant="outline"
+            icon="i-lucide-fingerprint"
+            label="Use passkey"
+            :loading="passkeyLoading"
+            @click="signInWithPasskey"
+          />
         </UForm>
+
+        <USeparator label="Or use a magic link" />
+
+        <div class="space-y-3">
+          <UFormField label="Email" name="email">
+            <UInput
+              v-model="state.email"
+              placeholder="jane@clinic.com"
+              icon="i-lucide-mail"
+              size="lg"
+              class="w-full"
+            />
+          </UFormField>
+          <UButton
+            block
+            size="lg"
+            color="neutral"
+            variant="soft"
+            icon="i-lucide-send"
+            label="Send magic link"
+            :loading="magicLinkLoading"
+            @click="sendMagicLink"
+          />
+        </div>
 
         <p class="text-center text-sm text-muted">
           Trouble signing in? Contact your administrator.

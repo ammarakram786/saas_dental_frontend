@@ -2,6 +2,7 @@
 definePageMeta({ layout: false })
 
 const { displayName, user, initials } = usePlatformUser()
+const workspace = useWorkspaceStore()
 const { clear } = useUserSession()
 const router = useRouter()
 const colorMode = useColorMode()
@@ -30,6 +31,11 @@ const highlights = [
   { icon: 'i-lucide-users', title: 'Your team', text: 'Collaborate with colleagues across your clinic.' },
   { icon: 'i-lucide-bar-chart-3', title: 'Insights', text: 'Track performance with clear, simple reports.' },
 ]
+
+const workspaceLink = computed(() => {
+  const slug = workspace.current?.value?.subdomain
+  return slug ? `/workspace/${slug}` : '/patient/dashboard'
+})
 </script>
 
 <template>
@@ -76,7 +82,7 @@ const highlights = [
         <p v-if="user?.email" class="mt-2 text-sm text-dimmed">{{ user.email }}</p>
 
         <div class="mt-10 flex flex-wrap items-center justify-center gap-3">
-          <UButton size="lg" color="primary" trailing-icon="i-lucide-arrow-right" label="Open my workspace" />
+          <UButton size="lg" color="primary" trailing-icon="i-lucide-arrow-right" label="Open my workspace" :to="workspaceLink" />
           <UButton size="lg" color="neutral" variant="outline" icon="i-lucide-circle-help" label="Get help" />
         </div>
       </div>

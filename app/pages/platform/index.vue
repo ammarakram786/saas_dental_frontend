@@ -1,15 +1,60 @@
 <script setup lang="ts">
-import { mockMetrics, mockAuditEvents } from '~/utils/mock'
-
 definePageMeta({ layout: 'platform' })
 useHead({ title: 'Dashboard · MedSaaS' })
 
 const search = ref('')
 const category = ref('All categories')
 const range = ref('Last 7 days')
+const tenantsStore = usePlatformTenantsStore()
+const billingStore = usePlatformBillingStore()
+const auditStore = usePlatformAuditStore()
 
-const { data: metrics, pending } = useMockQuery(() => mockMetrics, { delay: 900 })
-const recent = computed(() => mockAuditEvents.slice(0, 4))
+await Promise.all([
+  tenantsStore.fetch(),
+  billingStore.fetch({ ordering: '-created_at' }),
+  auditStore.fetch({ ordering: '-created_at' }),
+])
+
+const pending = computed(() => tenantsStore.pending || billingStore.pending || auditStore.pending)
+const metrics = computed(() => [
+  {
+    id: 'tenants',
+    label: 'Active Tenants',
+    value: String(tenantsStore.items.filter((item) => item.is_active).length),
+    icon: 'i-lucide-building-2',
+    delta: 0,
+    hint: 'current total',
+  },
+  {
+    id: 'invoices',
+    label: 'Invoices',
+    value: String(billingStore.count),
+    icon: 'i-lucide-receipt',
+    delta: 0,
+    hint: 'tracked centrally',
+  },
+  {
+    id: 'audit',
+    label: 'Audit Events',
+    value: String(auditStore.count),
+    icon: 'i-lucide-shield-check',
+    delta: 0,
+    hint: 'security stream',
+  },
+  {
+    id: 'outstanding',
+    label: 'Outstanding Copay',
+    value: String(
+      billingStore.items
+        .filter((item) => item.status !== 'paid')
+        .reduce((sum, item) => sum + Number(item.copay_amount), 0),
+    ),
+    icon: 'i-lucide-wallet',
+    delta: 0,
+    hint: 'raw amount',
+  },
+])
+const recent = computed(() => auditStore.items.slice(0, 4))
 </script>
 
 <template>
@@ -29,7 +74,7 @@ const recent = computed(() => mockAuditEvents.slice(0, 4))
     <!-- Metrics grid -->
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <MetricCard
-        v-for="metric in (metrics ?? mockMetrics)"
+        v-for="metric in metrics"
         :key="metric.id"
         :metric="metric"
         :loading="pending"
@@ -94,7 +139,7 @@ const recent = computed(() => mockAuditEvents.slice(0, 4))
                 {{ event.action }}
                 <span class="font-medium">{{ event.target }}</span>
               </p>
-              <p class="text-xs text-dimmed">{{ new Date(event.timestamp).toLocaleString() }}</p>
+              <p class="text-xs text-dimmed">{{ new Date(event.created_at).toLocaleString() }}</p>
             </div>
           </li>
         </ul>

@@ -41,8 +41,8 @@ const items = computed<DropdownMenuItem[][]>(() => [
         <UIcon name="i-lucide-building" class="size-3.5" />
       </span>
       <span class="flex min-w-0 flex-col items-start leading-tight">
-        <span class="truncate text-sm font-medium text-highlighted">{{ current.name }}</span>
-        <span class="truncate text-xs text-muted capitalize">{{ current.plan }} plan</span>
+        <span class="truncate text-sm font-medium text-highlighted">{{ current?.name || 'Workspace' }}</span>
+        <span class="truncate text-xs text-muted capitalize">{{ current?.role || 'member' }}</span>
       </span>
     </UButton>
   </UDropdownMenu>

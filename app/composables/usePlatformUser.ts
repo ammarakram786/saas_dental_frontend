@@ -27,23 +27,14 @@ export function usePlatformUser() {
 
   const isTenantUser = computed(() => loggedIn.value && !isPlatformUser.value)
 
-  // Mocked control-plane modules granted to the current platform role.
-  const allowedModules = useState<PlatformModuleCodename[]>(
-    'platform-allowed-modules',
-    () => [...ALL_MODULES],
-  )
+  const allowedModules = computed<PlatformModuleCodename[]>(() => {
+    const modules = (user.value?.platform_modules ?? []) as PlatformModuleCodename[]
+    return modules.length ? modules : [...ALL_MODULES]
+  })
 
   function hasModule(codename: PlatformModuleCodename) {
     if (user.value?.is_super_admin) return true
     return allowedModules.value.includes(codename)
-  }
-
-  function toggleModule(codename: PlatformModuleCodename) {
-    if (allowedModules.value.includes(codename)) {
-      allowedModules.value = allowedModules.value.filter((m) => m !== codename)
-    } else {
-      allowedModules.value = [...allowedModules.value, codename]
-    }
   }
 
   const displayName = computed(() => {
@@ -68,7 +59,6 @@ export function usePlatformUser() {
     isTenantUser,
     allowedModules,
     hasModule,
-    toggleModule,
     displayName,
     initials,
     ALL_MODULES,

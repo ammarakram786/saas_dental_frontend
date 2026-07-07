@@ -7,6 +7,13 @@ declare module '#auth-utils' {
     last_name: string
     is_super_admin: boolean
     platform_role: number | null
+    platform_modules?: string[]
+    workspaces?: Array<{
+      id: number
+      name: string
+      subdomain: string
+      role?: string
+    }>
     is_staff: boolean
     is_active: boolean
   }
