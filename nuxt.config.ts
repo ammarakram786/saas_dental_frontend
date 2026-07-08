@@ -10,22 +10,30 @@ export default defineNuxtConfig({
     'nuxt-auth-utils',
   ],
 
+  // Nested stores (e.g. app/stores/platform/*) are not scanned by default.
+  // Paths are resolved against Nuxt's app directory, so use "stores/**".
+  pinia: {
+    storesDirs: ['stores/**'],
+  },
+
   css: ['~/assets/css/main.css'],
 
   runtimeConfig: {
-    apiBase: 'http://127.0.0.1:5500',
+    apiBase: process.env.NUXT_API_BASE || 'http://127.0.0.1:5500',
     // nuxt-auth-utils session cookie settings.
+    // NUXT_SESSION_PASSWORD must be set (32+ chars) or setUserSession throws "Empty password".
     session: {
+      password: process.env.NUXT_SESSION_PASSWORD || '',
       cookie: {
-        // Over plain http (dev/LAN) a Secure cookie is rejected by the
-        // browser, so only mark it Secure in production (served over https).
-        secure: process.env.NODE_ENV === 'production',
+        // Site currently serves over HTTP via nginx :80.
+        // Secure cookies are dropped by browsers on plain HTTP.
+        secure: process.env.NUXT_SESSION_SECURE === 'true',
       },
     },
   },
   devServer: {
     host: '0.0.0.0', // '0.0.0.0' listens on all local interfaces (useful for Docker/LAN testing)
-    port: 5005       // Change this to your desired port number
+    port: 3030
   }
 })
     

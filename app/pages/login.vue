@@ -80,10 +80,10 @@ async function signInWithPasskey() {
 async function sendMagicLink() {
   magicLinkLoading.value = true
   try {
-    const result: any = await auth.requestMagicLink(state.email)
+    await auth.requestMagicLink(state.email)
     toast.add({
       title: 'Magic link prepared',
-      description: result?.token ? `Temporary token: ${result.token}` : 'Check your inbox.',
+      description: 'Check your inbox for the magic link.',
       color: 'primary',
       icon: 'i-lucide-mail',
     })

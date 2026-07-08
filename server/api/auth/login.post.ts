@@ -25,26 +25,48 @@ export default defineEventHandler(async (event) => {
       method: 'POST',
       body: { username, password },
     })
-  } catch {
+  } catch (error: any) {
+    const status = error?.statusCode || error?.response?.status
     throw createError({
-      statusCode: 401,
-      statusMessage: 'Invalid username or password.',
+      statusCode: status === 401 ? 401 : 502,
+      statusMessage:
+        status === 401
+          ? 'Invalid username or password.'
+          : 'Unable to reach authentication service.',
     })
   }
 
-  const user = await $fetch('/api/auth/me/', {
-    baseURL: apiBase,
-    headers: { Authorization: `Bearer ${tokens.access}` },
-  })
+  let user
+  try {
+    user = await $fetch('/api/auth/me/', {
+      baseURL: apiBase,
+      headers: { Authorization: `Bearer ${tokens.access}` },
+    })
+  } catch {
+    throw createError({
+      statusCode: 502,
+      statusMessage: 'Authenticated, but failed to load user profile.',
+    })
+  }
 
-  await setUserSession(event, {
-    user,
-    secure: {
-      accessToken: tokens.access,
-      refreshToken: tokens.refresh,
-    },
-    loggedInAt: new Date().toISOString(),
-  })
+  try {
+    await setUserSession(event, {
+      user,
+      secure: {
+        accessToken: tokens.access,
+        refreshToken: tokens.refresh,
+      },
+      loggedInAt: new Date().toISOString(),
+    })
+  } catch (error: any) {
+    throw createError({
+      statusCode: 500,
+      statusMessage:
+        error?.message === 'Empty password'
+          ? 'Server misconfiguration: NUXT_SESSION_PASSWORD is missing.'
+          : 'Failed to create login session.',
+    })
+  }
 
   return { user }
 })
