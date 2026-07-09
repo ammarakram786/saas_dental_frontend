@@ -7,6 +7,7 @@ const allowed = computed(() => hasModule('manage_tenants'))
 const store = usePlatformTenantsStore()
 
 const search = ref('')
+const createOpen = ref(false)
 await store.fetch()
 
 watchDebounced(
@@ -28,7 +29,10 @@ watchDebounced(
           <h1 class="text-2xl font-bold tracking-tight text-highlighted">Tenant management</h1>
           <p class="mt-1 text-sm text-muted">Provision and operate customer organizations.</p>
         </div>
-        <UBadge color="primary" variant="subtle" :label="`${store.count} tenants`" />
+        <div class="flex items-center gap-2">
+          <UBadge color="primary" variant="subtle" :label="`${store.count} tenants`" />
+          <UButton label="Provision tenant" icon="i-lucide-plus" @click="createOpen = true" />
+        </div>
       </div>
 
       <UCard>
@@ -56,6 +60,8 @@ watchDebounced(
           <p v-if="!store.items.length" class="p-4 text-sm text-muted">No tenants match your search.</p>
         </div>
       </UCard>
+
+      <TenantCreateSlideover v-model:open="createOpen" @created="store.fetch({ search: search || undefined })" />
     </div>
   </div>
 </template>

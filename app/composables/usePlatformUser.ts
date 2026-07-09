@@ -22,6 +22,7 @@ export function usePlatformUser() {
   const isPlatformUser = computed(() => {
     const u = user.value
     if (!u) return false
+    if (u.actor_types?.includes('platform')) return true
     return u.is_super_admin === true || u.platform_role !== null
   })
 

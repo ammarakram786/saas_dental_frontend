@@ -8,6 +8,7 @@ declare module '#auth-utils' {
     is_super_admin: boolean
     platform_role: number | null
     platform_modules?: string[]
+    actor_types?: Array<'platform' | 'tenant' | 'patient'>
     workspaces?: Array<{
       id: number
       name: string

@@ -4,6 +4,27 @@ export interface PlatformTenant {
   slug: string
   is_active: boolean
   created_at: string
+  admin_user?: PlatformTenantAdminUser
+}
+
+export interface PlatformTenantAdminUser {
+  id: number
+  email: string
+  first_name: string
+  last_name: string
+  created: boolean
+}
+
+export interface CreatePlatformTenantPayload {
+  name: string
+  slug: string
+  is_active?: boolean
+  admin_user: {
+    email: string
+    first_name?: string
+    last_name?: string
+    password?: string
+  }
 }
 
 export interface PaginatedResponse<T> {
