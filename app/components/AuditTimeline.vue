@@ -36,36 +36,25 @@ function formatTime(ts: string) {
 
     <ol v-else class="relative ms-2 space-y-8 border-s border-default ps-8">
       <li v-for="event in events" :key="event.id" class="relative">
-        <span
-          class="absolute -start-[41px] flex size-5 items-center justify-center rounded-full ring-4 ring-default"
-          :class="SEVERITY_META[event.severity].ring"
-        >
+        <span class="absolute -start-[41px] flex size-5 items-center justify-center rounded-full ring-4 ring-default"
+          :class="SEVERITY_META[event.severity].ring">
           <span class="size-2.5 rounded-full" :class="SEVERITY_META[event.severity].dot" />
         </span>
 
         <div class="flex flex-col gap-1 rounded-xl border border-default bg-default p-4 shadow-sm">
           <div class="flex flex-wrap items-center gap-2">
-            <UIcon
-              :name="SEVERITY_META[event.severity].icon"
-              class="size-4"
-              :class="{
-                'text-info': event.severity === 'info',
-                'text-warning': event.severity === 'warning',
-                'text-error': event.severity === 'critical',
-              }"
-            />
+            <UIcon :name="SEVERITY_META[event.severity].icon" class="size-4" :class="{
+              'text-info': event.severity === 'info',
+              'text-warning': event.severity === 'warning',
+              'text-error': event.severity === 'critical',
+            }" />
             <p class="text-sm text-highlighted">
               <span class="font-semibold">{{ event.actor }}</span>
               {{ event.action }}
               <span class="font-semibold">{{ event.target }}</span>
             </p>
-            <UBadge
-              :color="SEVERITY_META[event.severity].badge"
-              variant="subtle"
-              size="sm"
-              class="capitalize"
-              :label="event.category || 'general'"
-            />
+            <UBadge :color="SEVERITY_META[event.severity].badge" variant="subtle" size="sm" class="capitalize"
+              :label="event.category || 'general'" />
           </div>
           <time class="text-xs text-dimmed">{{ formatTime(event.created_at) }}</time>
         </div>
