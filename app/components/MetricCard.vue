@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { MockMetric } from '~/utils/mock'
+import type { DashboardMetric } from '~/types/api'
 
 const props = defineProps<{
-  metric: MockMetric
+  metric: DashboardMetric
   loading?: boolean
 }>()
 

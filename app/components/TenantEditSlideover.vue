@@ -1,56 +1,55 @@
 <script setup lang="ts">
-import {
-  SUBSCRIPTION_TIERS,
-  TENANT_STATUS_META,
-  type MockTenant,
-  type TenantStatus,
-  type SubscriptionTier,
-} from '~/utils/mock'
+import type { PlatformTenant, UpdatePlatformTenantPayload } from '~/types/api'
 
 const open = defineModel<boolean>('open', { default: false })
-const props = defineProps<{ tenant: MockTenant | null }>()
-const emit = defineEmits<{ save: [tenant: MockTenant] }>()
+const props = defineProps<{ tenant: PlatformTenant | null }>()
+const emit = defineEmits<{ saved: [tenant: PlatformTenant] }>()
 
+const store = usePlatformTenantsStore()
 const toast = useToast()
-const saving = ref(false)
 
 const form = reactive({
-  status: 'active' as TenantStatus,
-  tier: 'starter' as SubscriptionTier,
-  seats: 0,
+  name: '',
+  slug: '',
+  is_active: true,
 })
 
 watch(
   () => props.tenant,
   (t) => {
     if (t) {
-      form.status = t.status
-      form.tier = t.tier
-      form.seats = t.seats
+      form.name = t.name
+      form.slug = t.slug
+      form.is_active = t.is_active
     }
   },
   { immediate: true },
 )
 
-const statusItems = (Object.keys(TENANT_STATUS_META) as TenantStatus[]).map((value) => ({
-  label: TENANT_STATUS_META[value].label,
-  value,
-}))
-
 async function save() {
   if (!props.tenant) return
-  saving.value = true
-  // Simulate a DRF PATCH against the tenant resource.
-  await new Promise((r) => setTimeout(r, 700))
-  saving.value = false
-  emit('save', { ...props.tenant, status: form.status, tier: form.tier, seats: form.seats })
-  toast.add({
-    title: 'Tenant updated',
-    description: `${props.tenant.name} subscription saved.`,
-    icon: 'i-lucide-check',
-    color: 'success',
-  })
-  open.value = false
+  const payload: UpdatePlatformTenantPayload = {
+    name: form.name.trim(),
+    slug: form.slug.trim(),
+    is_active: form.is_active,
+  }
+  try {
+    const tenant = await store.update(props.tenant.id, payload)
+    emit('saved', tenant)
+    toast.add({
+      title: 'Tenant updated',
+      description: `${tenant.name} saved successfully.`,
+      icon: 'i-lucide-check',
+      color: 'success',
+    })
+    open.value = false
+  } catch (err: any) {
+    toast.add({
+      title: 'Update failed',
+      description: err?.data?.detail || err?.message || 'Could not update tenant.',
+      color: 'error',
+    })
+  }
 }
 </script>
 
@@ -58,7 +57,7 @@ async function save() {
   <USlideover
     v-model:open="open"
     :title="tenant?.name ?? 'Edit tenant'"
-    description="Manage subscription state and seat allocation."
+    description="Update clinic identity and activation status."
   >
     <template #body>
       <div v-if="tenant" class="space-y-6">
@@ -68,24 +67,28 @@ async function save() {
           </div>
           <div class="min-w-0">
             <p class="truncate font-medium text-highlighted">{{ tenant.name }}</p>
-            <p class="truncate text-sm text-muted">{{ tenant.subdomain }}.medsaas.io</p>
+            <p class="truncate text-sm text-muted">{{ tenant.slug }}.dentaldoodle.pk</p>
           </div>
         </div>
 
-        <UFormField label="Subscription status" name="status">
-          <USelect v-model="form.status" :items="statusItems" value-key="value" class="w-full" />
+        <UFormField label="Name" name="name">
+          <UInput v-model="form.name" class="w-full" />
         </UFormField>
 
-        <UFormField label="Plan tier" name="tier">
-          <USelect v-model="form.tier" :items="SUBSCRIPTION_TIERS" value-key="value" class="w-full" />
+        <UFormField label="Slug" name="slug">
+          <UInput v-model="form.slug" class="w-full" />
         </UFormField>
 
-        <UFormField label="Seats" name="seats">
-          <UInput v-model.number="form.seats" type="number" min="0" class="w-full" />
-        </UFormField>
+        <div class="flex items-center justify-between rounded-lg border border-default p-3">
+          <div>
+            <p class="text-sm font-medium text-highlighted">Active</p>
+            <p class="text-xs text-muted">Inactive tenants cannot resolve workspace context.</p>
+          </div>
+          <USwitch v-model="form.is_active" />
+        </div>
 
         <div
-          v-if="form.status === 'suspended'"
+          v-if="!form.is_active"
           class="flex items-start gap-2 rounded-lg border border-error/30 bg-error/5 p-3 text-sm text-error"
         >
           <UIcon name="i-lucide-triangle-alert" class="mt-0.5 size-4 shrink-0" />
@@ -97,7 +100,7 @@ async function save() {
     <template #footer>
       <div class="flex w-full justify-end gap-2">
         <UButton color="neutral" variant="outline" label="Cancel" @click="open = false" />
-        <UButton label="Save changes" icon="i-lucide-save" :loading="saving" @click="save" />
+        <UButton label="Save changes" icon="i-lucide-save" :loading="store.updating" @click="save" />
       </div>
     </template>
   </USlideover>

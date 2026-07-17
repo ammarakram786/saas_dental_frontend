@@ -33,7 +33,7 @@ const highlights = [
 ]
 
 const workspaceLink = computed(() => {
-  const slug = workspace.current?.value?.subdomain
+  const slug = workspace.current?.subdomain
   return slug ? `/workspace/${slug}` : '/patient/dashboard'
 })
 </script>

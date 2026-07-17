@@ -1,20 +1,18 @@
 <script setup lang="ts">
-import { mockBillingHistory } from '~/utils/mock'
-
 definePageMeta({ layout: 'platform' })
 useHead({ title: 'Settings · MedSaaS' })
 
 const { user, displayName } = usePlatformUser()
-const { current } = useWorkspace()
 const toast = useToast()
+const billingStore = usePlatformBillingStore()
 
 type Section = 'general' | 'security' | 'billing'
 const active = ref<Section>('general')
 
 const sections: { id: Section; label: string; icon: string; description: string }[] = [
-  { id: 'general', label: 'General', icon: 'i-lucide-settings-2', description: 'Profile and workspace basics' },
-  { id: 'security', label: 'Security', icon: 'i-lucide-shield', description: 'Authentication and danger zone' },
-  { id: 'billing', label: 'Billing History', icon: 'i-lucide-receipt', description: 'Invoices and payments' },
+  { id: 'general', label: 'General', icon: 'i-lucide-settings-2', description: 'Profile basics' },
+  { id: 'security', label: 'Security', icon: 'i-lucide-shield', description: 'Authentication' },
+  { id: 'billing', label: 'Billing overview', icon: 'i-lucide-receipt', description: 'Cross-tenant invoices' },
 ]
 
 const profile = reactive({
@@ -24,45 +22,35 @@ const profile = reactive({
 })
 
 function saveProfile() {
-  toast.add({ title: 'Settings saved', icon: 'i-lucide-check', color: 'success' })
+  toast.add({
+    title: 'Profile preferences saved locally',
+    description: 'Account profile updates via API are not yet available.',
+    icon: 'i-lucide-check',
+    color: 'success',
+  })
 }
 
-// Destructive: delete workspace with type-to-confirm.
-const deleteOpen = ref(false)
-const deleting = ref(false)
-function confirmDelete() {
-  deleting.value = true
-  setTimeout(() => {
-    deleting.value = false
-    deleteOpen.value = false
-    toast.add({
-      title: 'Workspace deletion scheduled',
-      description: `${current.value.name} will be removed in 30 days.`,
-      icon: 'i-lucide-trash-2',
-      color: 'error',
-    })
-  }, 800)
-}
-
-const statusColor = {
-  paid: 'success',
-  pending: 'warning',
-  failed: 'error',
-} as const
+await billingStore.fetch({ ordering: '-created_at', page_size: 20 })
 
 const dateFmt = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
+const currency = new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR' })
+
+const statusColor: Record<string, 'success' | 'warning' | 'error' | 'neutral'> = {
+  paid: 'success',
+  issued: 'warning',
+  draft: 'neutral',
+  void: 'error',
+}
 </script>
 
 <template>
   <div>
     <div class="mb-6">
       <h1 class="text-2xl font-bold tracking-tight text-highlighted">Settings</h1>
-      <p class="mt-1 text-sm text-muted">Manage your account, security and billing.</p>
+      <p class="mt-1 text-sm text-muted">Manage your account and review platform billing.</p>
     </div>
 
     <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-      <!-- Left nav -->
       <nav class="md:col-span-1">
         <ul class="space-y-1">
           <li v-for="s in sections" :key="s.id">
@@ -84,9 +72,7 @@ const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: '
         </ul>
       </nav>
 
-      <!-- Right panel -->
       <div class="md:col-span-2">
-        <!-- General -->
         <UCard v-if="active === 'general'">
           <template #header>
             <h2 class="font-semibold text-highlighted">General</h2>
@@ -113,81 +99,57 @@ const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: '
           </template>
         </UCard>
 
-        <!-- Security -->
-        <div v-else-if="active === 'security'" class="space-y-6">
-          <UCard>
-            <template #header>
-              <h2 class="font-semibold text-highlighted">Security</h2>
-            </template>
-            <div class="space-y-4">
-              <div class="flex items-center justify-between rounded-lg border border-default p-3">
-                <div>
-                  <p class="text-sm font-medium text-highlighted">Two-factor authentication</p>
-                  <p class="text-xs text-muted">Add an extra layer of protection.</p>
-                </div>
-                <UButton color="neutral" variant="outline" label="Enable" />
-              </div>
-              <div class="flex items-center justify-between rounded-lg border border-default p-3">
-                <div>
-                  <p class="text-sm font-medium text-highlighted">Active sessions</p>
-                  <p class="text-xs text-muted">Sign out of all other devices.</p>
-                </div>
-                <UButton color="neutral" variant="outline" label="Revoke all" />
-              </div>
-            </div>
-          </UCard>
-
-          <UCard :ui="{ root: 'ring-error/30' }">
-            <template #header>
-              <h2 class="font-semibold text-error">Danger zone</h2>
-            </template>
-            <div class="flex flex-wrap items-center justify-between gap-3">
+        <UCard v-else-if="active === 'security'">
+          <template #header>
+            <h2 class="font-semibold text-highlighted">Security</h2>
+          </template>
+          <div class="space-y-4">
+            <div class="flex items-center justify-between rounded-lg border border-default p-3">
               <div>
-                <p class="text-sm font-medium text-highlighted">Delete workspace</p>
-                <p class="text-xs text-muted">
-                  Permanently remove <span class="font-medium">{{ current.name }}</span> and all of its data.
-                </p>
+                <p class="text-sm font-medium text-highlighted">Passkeys</p>
+                <p class="text-xs text-muted">Register and use WebAuthn credentials from the login page.</p>
               </div>
-              <UButton color="error" variant="soft" icon="i-lucide-trash-2" label="Delete" @click="deleteOpen = true" />
+              <UButton color="neutral" variant="outline" label="Open login" to="/login" />
             </div>
-          </UCard>
-        </div>
+          </div>
+        </UCard>
 
-        <!-- Billing History -->
         <UCard v-else>
           <template #header>
-            <h2 class="font-semibold text-highlighted">Billing history</h2>
+            <h2 class="font-semibold text-highlighted">Cross-tenant invoices</h2>
           </template>
-          <ul class="divide-y divide-default">
+          <div v-if="billingStore.pending" class="space-y-3">
+            <USkeleton v-for="i in 4" :key="i" class="h-10 w-full" />
+          </div>
+          <ul v-else class="divide-y divide-default">
             <li
-              v-for="entry in mockBillingHistory"
+              v-for="entry in billingStore.items"
               :key="entry.id"
               class="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
             >
               <div class="min-w-0">
-                <p class="truncate text-sm font-medium text-highlighted">{{ entry.description }}</p>
+                <p class="truncate text-sm font-medium text-highlighted">Invoice #{{ entry.id }}</p>
                 <p class="truncate text-xs text-muted">
-                  {{ entry.id }} · {{ entry.tenant }} · {{ dateFmt.format(new Date(entry.date)) }}
+                  {{ entry.tenant_name || `Tenant ${entry.tenant}` }} · Patient {{ entry.patient }}
+                  <span v-if="entry.created_at"> · {{ dateFmt.format(new Date(entry.created_at)) }}</span>
                 </p>
               </div>
               <div class="flex shrink-0 items-center gap-3">
-                <span class="text-sm font-medium text-highlighted">{{ currency.format(entry.amount) }}</span>
-                <UBadge :color="statusColor[entry.status]" variant="subtle" class="capitalize" :label="entry.status" />
+                <span class="text-sm font-medium text-highlighted">
+                  {{ currency.format(Number(entry.copay_amount || 0)) }}
+                </span>
+                <UBadge
+                  :color="statusColor[entry.status] || 'neutral'"
+                  variant="subtle"
+                  class="capitalize"
+                  :label="entry.status"
+                />
               </div>
             </li>
+            <li v-if="!billingStore.items.length" class="py-4 text-sm text-muted">No invoices yet.</li>
           </ul>
         </UCard>
       </div>
     </div>
-
-    <ConfirmActionModal
-      v-model:open="deleteOpen"
-      title="Delete workspace"
-      :description="`This will permanently delete ${current.name}.`"
-      :confirm-text="current.name"
-      confirm-label="Delete workspace"
-      :loading="deleting"
-      @confirm="confirmDelete"
-    />
   </div>
 </template>

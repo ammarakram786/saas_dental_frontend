@@ -1,15 +1,12 @@
 <script setup lang="ts">
+import { workspaceNavLinks } from '~/config/workspace-nav'
+
 const { current } = useWorkspace()
 const route = useRoute()
 
 const links = computed(() => {
-  const slug = current.value?.subdomain || route.params.slug || 'workspace'
-  return [
-    { label: 'Overview', to: `/workspace/${slug}` },
-    { label: 'Team', to: `/workspace/${slug}/team` },
-    { label: 'Schedule', to: `/workspace/${slug}/schedule` },
-    { label: 'Billing', to: `/workspace/${slug}/billing/invoices` },
-  ]
+  const slug = String(current.value?.subdomain || route.params.slug || 'workspace')
+  return workspaceNavLinks(slug)
 })
 </script>
 

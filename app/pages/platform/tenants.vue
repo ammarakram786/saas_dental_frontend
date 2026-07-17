@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { PlatformTenant } from '~/types/api'
+
 definePageMeta({ layout: 'platform' })
 useHead({ title: 'Tenants · MedSaaS' })
 
@@ -8,6 +10,9 @@ const store = usePlatformTenantsStore()
 
 const search = ref('')
 const createOpen = ref(false)
+const editOpen = ref(false)
+const selected = ref<PlatformTenant | null>(null)
+
 await store.fetch()
 
 watchDebounced(
@@ -17,6 +22,11 @@ watchDebounced(
   },
   { debounce: 300 },
 )
+
+function openEdit(tenant: PlatformTenant) {
+  selected.value = tenant
+  editOpen.value = true
+}
 </script>
 
 <template>
@@ -51,17 +61,28 @@ watchDebounced(
               <p class="font-medium text-highlighted">{{ tenant.name }}</p>
               <p class="text-sm text-muted">{{ tenant.slug }}.dentaldoodle.pk</p>
             </div>
-            <UBadge
-              :color="tenant.is_active ? 'success' : 'error'"
-              variant="subtle"
-              :label="tenant.is_active ? 'Active' : 'Inactive'"
-            />
+            <div class="flex items-center gap-2">
+              <UBadge
+                :color="tenant.is_active ? 'success' : 'error'"
+                variant="subtle"
+                :label="tenant.is_active ? 'Active' : 'Inactive'"
+              />
+              <UButton
+                color="neutral"
+                variant="outline"
+                size="sm"
+                icon="i-lucide-pencil"
+                label="Manage"
+                @click="openEdit(tenant)"
+              />
+            </div>
           </div>
           <p v-if="!store.items.length" class="p-4 text-sm text-muted">No tenants match your search.</p>
         </div>
       </UCard>
 
       <TenantCreateSlideover v-model:open="createOpen" @created="store.fetch({ search: search || undefined })" />
+      <TenantEditSlideover v-model:open="editOpen" :tenant="selected" />
     </div>
   </div>
 </template>

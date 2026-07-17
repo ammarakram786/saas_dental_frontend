@@ -1,11 +1,19 @@
 export default defineNuxtRouteMiddleware((to) => {
-  const { loggedIn } = useUserSession()
+  const { loggedIn, user } = useUserSession()
   const { isPlatformUser } = usePlatformUser()
 
-  // Unauthenticated: only /login is reachable.
+  const actors = user.value?.actor_types ?? []
+  const workspaces = (user.value as { workspaces?: unknown[] } | null)?.workspaces
+  const isPatientOnly =
+    !isPlatformUser.value &&
+    actors.includes('patient') &&
+    (!actors.includes('tenant') || !workspaces || workspaces.length === 0)
+
   if (to.path === '/login') {
     if (loggedIn.value) {
-      return navigateTo(isPlatformUser.value ? '/platform' : '/welcome')
+      if (isPlatformUser.value) return navigateTo('/platform')
+      if (isPatientOnly) return navigateTo('/patient/dashboard')
+      return navigateTo('/welcome')
     }
     return
   }
@@ -14,13 +22,13 @@ export default defineNuxtRouteMiddleware((to) => {
     return navigateTo('/login')
   }
 
-  // Branch the landing page by role.
   if (to.path === '/') {
-    return navigateTo(isPlatformUser.value ? '/platform' : '/welcome')
+    if (isPlatformUser.value) return navigateTo('/platform')
+    if (isPatientOnly) return navigateTo('/patient/dashboard')
+    return navigateTo('/welcome')
   }
 
-  // Tenant users have no access to the platform control plane.
   if (to.path.startsWith('/platform') && !isPlatformUser.value) {
-    return navigateTo('/welcome')
+    return navigateTo(isPatientOnly ? '/patient/dashboard' : '/welcome')
   }
 })

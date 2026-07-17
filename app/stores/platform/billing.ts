@@ -1,15 +1,5 @@
-import type { InvoiceListQuery, PaginatedResponse } from '~/types/api'
+import type { InvoiceListQuery, PaginatedResponse, PlatformInvoice } from '~/types/api'
 import { toQueryParams } from '~/types/api'
-
-export interface PlatformInvoice {
-  id: number
-  tenant_name: string
-  subtotal: number
-  insurance_coverage: number
-  copay_amount: number
-  status: string
-  created_at: string
-}
 
 export const usePlatformBillingStore = defineStore('platform-billing', () => {
   const { apiFetch } = useApi()
@@ -30,7 +20,6 @@ export const usePlatformBillingStore = defineStore('platform-billing', () => {
     }
   }
 
-  /** @deprecated use fetch() */
   async function fetchAll() {
     return fetch()
   }

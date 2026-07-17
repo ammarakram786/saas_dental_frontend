@@ -1,10 +1,18 @@
 <script setup lang="ts">
-// `/` is a role-based router target only — the global auth middleware
-// redirects to `/platform` (platform users) or `/welcome` (tenant users).
-const { isPlatformUser } = usePlatformUser()
+const { isPlatformUser, isPatientUser } = usePlatformUser()
+const { user } = useUserSession()
 
 onMounted(() => {
-  navigateTo(isPlatformUser.value ? '/platform' : '/welcome')
+  if (isPlatformUser.value) {
+    navigateTo('/platform')
+    return
+  }
+  const workspaces = (user.value as { workspaces?: unknown[] } | null)?.workspaces
+  if (isPatientUser.value && (!workspaces || workspaces.length === 0)) {
+    navigateTo('/patient/dashboard')
+    return
+  }
+  navigateTo('/welcome')
 })
 </script>
 

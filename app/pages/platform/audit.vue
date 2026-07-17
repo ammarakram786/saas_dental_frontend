@@ -11,7 +11,6 @@ const filterItems = [
   { label: 'All events', value: 'all' },
   { label: 'Billing', value: 'billing' },
   { label: 'Members', value: 'members' },
-  { label: 'Projects', value: 'projects' },
   { label: 'Security', value: 'security' },
 ]
 
@@ -43,10 +42,7 @@ watch(filter, () => {
       </div>
 
       <UCard>
-        <AuditTimeline
-          :events="store.items.map((event) => ({ ...event, timestamp: event.created_at }))"
-          :loading="store.pending"
-        />
+        <AuditTimeline :events="store.items" :loading="store.pending" />
         <p v-if="!store.pending && !store.items.length" class="py-8 text-center text-sm text-muted">
           No events in this category.
         </p>

@@ -3,6 +3,7 @@ import type {
   PaginatedResponse,
   PlatformTenant,
   TenantListQuery,
+  UpdatePlatformTenantPayload,
 } from '~/types/api'
 import { toQueryParams } from '~/types/api'
 
@@ -12,6 +13,7 @@ export const usePlatformTenantsStore = defineStore('platform-tenants', () => {
   const count = ref(0)
   const pending = ref(false)
   const creating = ref(false)
+  const updating = ref(false)
 
   async function fetch(query: TenantListQuery = {}) {
     pending.value = true
@@ -41,10 +43,24 @@ export const usePlatformTenantsStore = defineStore('platform-tenants', () => {
     }
   }
 
+  async function update(id: number, payload: UpdatePlatformTenantPayload) {
+    updating.value = true
+    try {
+      const tenant = await apiFetch<PlatformTenant>(`platform/tenants/${id}`, {
+        method: 'PATCH',
+        body: payload,
+      })
+      items.value = items.value.map((t) => (t.id === id ? tenant : t))
+      return tenant
+    } finally {
+      updating.value = false
+    }
+  }
+
   /** @deprecated use fetch() */
   async function fetchAll() {
     return fetch()
   }
 
-  return { items, count, pending, creating, fetch, create, fetchAll }
+  return { items, count, pending, creating, updating, fetch, create, update, fetchAll }
 })

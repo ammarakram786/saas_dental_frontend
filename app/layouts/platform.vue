@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
-import { PLATFORM_MODULES } from '~/utils/mock'
+import { PLATFORM_MODULES } from '~/config/platform-nav'
 
 const { mobileOpen } = useSidebar()
 const { hasModule } = usePlatformUser()

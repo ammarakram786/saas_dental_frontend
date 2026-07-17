@@ -1,20 +1,11 @@
-import type { PlatformModuleCodename } from '~/utils/mock'
-
-const ALL_MODULES: PlatformModuleCodename[] = [
-  'manage_tenants',
-  'manage_billing',
-  'manage_support',
-  'security_audit',
-]
+import type { PlatformModuleCodename } from '~/types/api'
+import { ALL_PLATFORM_MODULES } from '~/config/platform-nav'
 
 /**
  * Role-aware wrapper around the auth session.
  *
- * Platform user = `is_super_admin === true` OR `platform_role !== null`.
- * Everyone else is treated as a tenant user (welcome screen only).
- *
- * `allowedModules` mocks `platform_role.allowed_modules`. It is shared app-wide
- * via `useState` and can be toggled at runtime to demo permission-lock states.
+ * Platform user = `is_super_admin === true` OR `platform_role !== null`
+ * OR actor_types includes 'platform'.
  */
 export function usePlatformUser() {
   const { user, loggedIn } = useUserSession()
@@ -28,9 +19,14 @@ export function usePlatformUser() {
 
   const isTenantUser = computed(() => loggedIn.value && !isPlatformUser.value)
 
+  const isPatientUser = computed(() => {
+    const actors = user.value?.actor_types ?? []
+    return actors.includes('patient')
+  })
+
   const allowedModules = computed<PlatformModuleCodename[]>(() => {
     const modules = (user.value?.platform_modules ?? []) as PlatformModuleCodename[]
-    return modules.length ? modules : [...ALL_MODULES]
+    return modules.length ? modules : [...ALL_PLATFORM_MODULES]
   })
 
   function hasModule(codename: PlatformModuleCodename) {
@@ -58,10 +54,11 @@ export function usePlatformUser() {
     loggedIn,
     isPlatformUser,
     isTenantUser,
+    isPatientUser,
     allowedModules,
     hasModule,
     displayName,
     initials,
-    ALL_MODULES,
+    ALL_MODULES: ALL_PLATFORM_MODULES,
   }
 }

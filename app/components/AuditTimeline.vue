@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import type { MockAuditEvent, AuditSeverity } from '~/utils/mock'
+import type { PlatformAuditEvent } from '~/types/api'
 
 defineProps<{
-  events: MockAuditEvent[]
+  events: PlatformAuditEvent[]
   loading?: boolean
 }>()
 
 const SEVERITY_META: Record<
-  AuditSeverity,
+  'info' | 'warning' | 'critical',
   { dot: string; ring: string; icon: string; badge: 'info' | 'warning' | 'error' }
 > = {
   info: { dot: 'bg-info', ring: 'ring-info/20', icon: 'i-lucide-info', badge: 'info' },
@@ -27,7 +27,6 @@ function formatTime(ts: string) {
 
 <template>
   <div>
-    <!-- Loading skeleton -->
     <ol v-if="loading" class="relative ms-2 space-y-8 border-s border-default ps-8">
       <li v-for="i in 4" :key="i" class="space-y-2">
         <USkeleton class="h-4 w-2/3" />
@@ -37,7 +36,6 @@ function formatTime(ts: string) {
 
     <ol v-else class="relative ms-2 space-y-8 border-s border-default ps-8">
       <li v-for="event in events" :key="event.id" class="relative">
-        <!-- Circle indicator -->
         <span
           class="absolute -start-[41px] flex size-5 items-center justify-center rounded-full ring-4 ring-default"
           :class="SEVERITY_META[event.severity].ring"
@@ -66,10 +64,10 @@ function formatTime(ts: string) {
               variant="subtle"
               size="sm"
               class="capitalize"
-              :label="event.category"
+              :label="event.category || 'general'"
             />
           </div>
-          <time class="text-xs text-dimmed">{{ formatTime(event.timestamp) }}</time>
+          <time class="text-xs text-dimmed">{{ formatTime(event.created_at) }}</time>
         </div>
       </li>
     </ol>
