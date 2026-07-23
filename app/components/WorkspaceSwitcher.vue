@@ -6,10 +6,10 @@ const toast = useToast()
 
 const items = computed<DropdownMenuItem[][]>(() => [
   [{ label: 'Switch workspace', type: 'label' }],
-  workspaces.value.map((w) => ({
+  (workspaces.value ?? []).map((w) => ({
     label: w.name,
     icon: 'i-lucide-building',
-    trailingIcon: w.id === current.value.id ? 'i-lucide-check' : undefined,
+    trailingIcon: w.id === current.value?.id ? 'i-lucide-check' : undefined,
     onSelect: () => {
       switchTo(w.id)
       toast.add({
