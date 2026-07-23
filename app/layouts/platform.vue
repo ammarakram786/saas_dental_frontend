@@ -29,7 +29,7 @@ watch(() => route.fullPath, () => {
     <div class="flex min-w-0 flex-1 flex-col">
       <AppHeader />
       <main class="flex-1">
-        <div class="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8">
+        <div class="w-full max-w-none flex-1 p-4 sm:p-6 lg:p-8">
           <slot />
         </div>
       </main>
